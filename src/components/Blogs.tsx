@@ -24,11 +24,12 @@ const Blogs: React.FC = () => {
   const [blogToDelete, setBlogToDelete] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
     title: '',
     description: '',
-    image: '',
+    image: null as File | null,
     content: '',
     category: '',
     tags: '',
@@ -71,13 +72,14 @@ const Blogs: React.FC = () => {
     setFormData({
       title: '',
       description: '',
-      image: '',
+      image: null,
       content: '',
       category: '',
       tags: '',
       meta_title: '',
       meta_description: ''
     });
+    setImagePreview(null);
     setCurrentBlog(null);
     setIsModalOpen(true);
   };
@@ -86,13 +88,14 @@ const Blogs: React.FC = () => {
     setFormData({
       title: blog.title,
       description: blog.description,
-      image: blog.image,
+      image: null,
       content: blog.content,
       category: blog.category,
       tags: blog.tags || '',
       meta_title: blog.meta_title || '',
       meta_description: blog.meta_description || ''
     });
+    setImagePreview(blog.image);
     setCurrentBlog(blog);
     setIsModalOpen(true);
   };
@@ -109,6 +112,14 @@ const Blogs: React.FC = () => {
     setFormData({ ...formData, [name]: value });
   };
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setFormData({ ...formData, image: file });
+      setImagePreview(URL.createObjectURL(file));
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!username || !token) return;
@@ -116,26 +127,29 @@ const Blogs: React.FC = () => {
     setIsLoading(true);
     setError(null);
 
-    const blogData = {
-      title: formData.title,
-      description: formData.description,
-      image: formData.image,
-      content: formData.content,
-      category: formData.category,
-      ...(formData.tags && { tags: formData.tags }),
-      ...(formData.meta_title && { meta_title: formData.meta_title }),
-      ...(formData.meta_description && { meta_description: formData.meta_description })
-    };
+    const submitData = new FormData();
+    submitData.append('title', formData.title);
+    submitData.append('description', formData.description);
+    submitData.append('content', formData.content);
+    submitData.append('category', formData.category);
+
+    if (formData.image) {
+      submitData.append('image', formData.image);
+    }
+
+    if (formData.tags) submitData.append('tags', formData.tags);
+    if (formData.meta_title) submitData.append('meta_title', formData.meta_title);
+    if (formData.meta_description) submitData.append('meta_description', formData.meta_description);
 
     try {
       if (currentBlog) {
         await axios.put(
           `https://backend.gamanrehabcenter.com/website/user/${username}/blog/${currentBlog.id}/`,
-          blogData,
+          submitData,
           {
             headers: {
               Authorization: `Bearer ${token}`,
-              'Content-Type': 'application/json'
+              'Content-Type': 'multipart/form-data'
             }
           }
         );
@@ -143,11 +157,11 @@ const Blogs: React.FC = () => {
       } else {
         await axios.post(
           `https://backend.gamanrehabcenter.com/website/user/${username}/blog/`,
-          blogData,
+          submitData,
           {
             headers: {
               Authorization: `Bearer ${token}`,
-              'Content-Type': 'application/json'
+              'Content-Type': 'multipart/form-data'
             }
           }
         );
@@ -338,25 +352,24 @@ const Blogs: React.FC = () => {
 
               <div>
                 <label htmlFor="image" className="block text-sm font-medium text-gray-300 mb-1">
-                  Image URL <span className="text-red-500">*</span>
+                  Image {!currentBlog && <span className="text-red-500">*</span>}
                 </label>
                 <input
                   id="image"
                   name="image"
-                  type="text"
-                  required
+                  type="file"
+                  accept="image/*"
+                  required={!currentBlog}
                   className="w-full px-4 py-3 rounded-lg"
-                  placeholder="Enter image URL"
-                  value={formData.image}
-                  onChange={handleInputChange}
+                  onChange={handleFileChange}
                   disabled={isLoading}
                 />
-                {formData.image && (
+                {imagePreview && (
                   <div className="mt-2">
                     <p className="text-sm text-gray-400 mb-1">Preview:</p>
                     <div className="w-full h-40 rounded-lg overflow-hidden">
                       <img 
-                        src={formData.image} 
+                        src={imagePreview} 
                         alt="Preview" 
                         className="w-full h-full object-cover"
                       />

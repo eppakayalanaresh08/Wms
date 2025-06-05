@@ -128,18 +128,40 @@ const Blogs: React.FC = () => {
     setError(null);
 
     const submitData = new FormData();
-    submitData.append('title', formData.title);
-    submitData.append('description', formData.description);
-    submitData.append('content', formData.content);
-    submitData.append('category', formData.category);
+    
+    // Required fields
+    if (!formData.title || !formData.description || !formData.content || !formData.category) {
+      toast.error('Please fill in all required fields');
+      setIsLoading(false);
+      return;
+    }
+
+    submitData.append('title', formData.title.trim());
+    submitData.append('description', formData.description.trim());
+    submitData.append('content', formData.content.trim());
+    submitData.append('category', formData.category.trim());
+
+    // Handle image - required for new blogs
+    if (!currentBlog && !formData.image) {
+      toast.error('Please select an image');
+      setIsLoading(false);
+      return;
+    }
 
     if (formData.image) {
       submitData.append('image', formData.image);
     }
 
-    if (formData.tags) submitData.append('tags', formData.tags);
-    if (formData.meta_title) submitData.append('meta_title', formData.meta_title);
-    if (formData.meta_description) submitData.append('meta_description', formData.meta_description);
+    // Optional fields - only append if they have values
+    if (formData.tags?.trim()) {
+      submitData.append('tags', formData.tags.trim());
+    }
+    if (formData.meta_title?.trim()) {
+      submitData.append('meta_title', formData.meta_title.trim());
+    }
+    if (formData.meta_description?.trim()) {
+      submitData.append('meta_description', formData.meta_description.trim());
+    }
 
     try {
       if (currentBlog) {
@@ -170,8 +192,9 @@ const Blogs: React.FC = () => {
       
       await fetchBlogs();
       setIsModalOpen(false);
-    } catch (error) {
-      toast.error(currentBlog ? 'Failed to update blog' : 'Failed to create blog');
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || (currentBlog ? 'Failed to update blog' : 'Failed to create blog');
+      toast.error(errorMessage);
       console.error('Error saving blog:', error);
     } finally {
       setIsLoading(false);

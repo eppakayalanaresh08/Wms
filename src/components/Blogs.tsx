@@ -1,52 +1,83 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Plus, Edit, Trash2, X } from 'lucide-react';
+import axios from 'axios';
+import toast from 'react-hot-toast';
 
 interface Blog {
   id: number;
   title: string;
   description: string;
   image: string;
+  content: string;
+  category: string;
+  tags?: string;
+  meta_title?: string;
+  meta_description?: string;
   date: string;
 }
 
 const Blogs: React.FC = () => {
-  const [blogs, setBlogs] = useState<Blog[]>([
-    {
-      id: 1,
-      title: 'Understanding Preventive Healthcare',
-      description: 'Preventive healthcare is the most effective way to stay healthy and avoid serious medical conditions...',
-      image: 'https://images.pexels.com/photos/3938022/pexels-photo-3938022.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
-      date: '2025-03-15'
-    },
-    {
-      id: 2,
-      title: 'The Importance of Mental Health',
-      description: 'Mental health is just as important as physical health. Learn about the signs of mental health issues and how to address them...',
-      image: 'https://images.pexels.com/photos/3760607/pexels-photo-3760607.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
-      date: '2025-03-10'
-    },
-    {
-      id: 3,
-      title: 'Nutrition Tips for a Healthy Lifestyle',
-      description: 'Proper nutrition is the foundation of good health. Discover the best foods to eat for optimal health and wellness...',
-      image: 'https://images.pexels.com/photos/1640770/pexels-photo-1640770.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
-      date: '2025-03-05'
-    }
-  ]);
-
+  const [blogs, setBlogs] = useState<Blog[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [currentBlog, setCurrentBlog] = useState<Blog | null>(null);
   const [blogToDelete, setBlogToDelete] = useState<number | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
     title: '',
     description: '',
-    image: ''
+    image: '',
+    content: '',
+    category: '',
+    tags: '',
+    meta_title: '',
+    meta_description: ''
   });
 
+  const username = localStorage.getItem('username');
+  const token = localStorage.getItem('accessToken');
+
+  useEffect(() => {
+    fetchBlogs();
+  }, []);
+
+  const fetchBlogs = async () => {
+    if (!username || !token) return;
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const response = await axios.get(
+        `https://backend.gamanrehabcenter.com/website/user/${username}/blog/`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      );
+      setBlogs(response.data);
+    } catch (error) {
+      setError('Failed to fetch blogs');
+      console.error('Error fetching blogs:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const openAddModal = () => {
-    setFormData({ title: '', description: '', image: '' });
+    setFormData({
+      title: '',
+      description: '',
+      image: '',
+      content: '',
+      category: '',
+      tags: '',
+      meta_title: '',
+      meta_description: ''
+    });
     setCurrentBlog(null);
     setIsModalOpen(true);
   };
@@ -55,7 +86,12 @@ const Blogs: React.FC = () => {
     setFormData({
       title: blog.title,
       description: blog.description,
-      image: blog.image
+      image: blog.image,
+      content: blog.content,
+      category: blog.category,
+      tags: blog.tags || '',
+      meta_title: blog.meta_title || '',
+      meta_description: blog.meta_description || ''
     });
     setCurrentBlog(blog);
     setIsModalOpen(true);
@@ -66,43 +102,111 @@ const Blogs: React.FC = () => {
     setIsDeleteModalOpen(true);
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (currentBlog) {
-      // Edit existing blog
-      setBlogs(blogs.map(blog => 
-        blog.id === currentBlog.id 
-          ? { ...blog, ...formData } 
-          : blog
-      ));
-    } else {
-      // Add new blog
-      const newBlog: Blog = {
-        id: blogs.length ? Math.max(...blogs.map(b => b.id)) + 1 : 1,
-        title: formData.title,
-        description: formData.description,
-        image: formData.image,
-        date: new Date().toISOString().split('T')[0]
-      };
-      setBlogs([...blogs, newBlog]);
+    if (!username || !token) return;
+
+    setIsLoading(true);
+    setError(null);
+
+    const blogData = {
+      title: formData.title,
+      description: formData.description,
+      image: formData.image,
+      content: formData.content,
+      category: formData.category,
+      ...(formData.tags && { tags: formData.tags }),
+      ...(formData.meta_title && { meta_title: formData.meta_title }),
+      ...(formData.meta_description && { meta_description: formData.meta_description })
+    };
+
+    try {
+      if (currentBlog) {
+        await axios.put(
+          `https://backend.gamanrehabcenter.com/website/user/${username}/blog/${currentBlog.id}/`,
+          blogData,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          }
+        );
+        toast.success('Blog updated successfully');
+      } else {
+        await axios.post(
+          `https://backend.gamanrehabcenter.com/website/user/${username}/blog/`,
+          blogData,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          }
+        );
+        toast.success('Blog created successfully');
+      }
+      
+      await fetchBlogs();
+      setIsModalOpen(false);
+    } catch (error) {
+      toast.error(currentBlog ? 'Failed to update blog' : 'Failed to create blog');
+      console.error('Error saving blog:', error);
+    } finally {
+      setIsLoading(false);
     }
-    
-    setIsModalOpen(false);
   };
 
-  const handleDelete = () => {
-    if (blogToDelete !== null) {
-      setBlogs(blogs.filter(blog => blog.id !== blogToDelete));
+  const handleDelete = async () => {
+    if (!username || !token || !blogToDelete) return;
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      await axios.delete(
+        `https://backend.gamanrehabcenter.com/website/user/${username}/blog/${blogToDelete}/`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      );
+      
+      toast.success('Blog deleted successfully');
+      await fetchBlogs();
       setIsDeleteModalOpen(false);
       setBlogToDelete(null);
+    } catch (error) {
+      toast.error('Failed to delete blog');
+      console.error('Error deleting blog:', error);
+    } finally {
+      setIsLoading(false);
     }
   };
+
+  if (!username || !token) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <div className="text-center">
+          <p className="text-gray-400 mb-4">Please log in to manage blogs</p>
+          <button
+            onClick={() => window.location.href = '/'}
+            className="btn-neon px-4 py-2 rounded-lg"
+          >
+            Go to Login
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -111,11 +215,18 @@ const Blogs: React.FC = () => {
         <button 
           onClick={openAddModal}
           className="btn-neon flex items-center px-4 py-2 rounded-lg"
+          disabled={isLoading}
         >
           <Plus size={18} className="mr-2" />
           Add Blog
         </button>
       </div>
+
+      {error && (
+        <div className="mb-6 p-4 bg-red-500/10 border border-red-500 rounded-lg text-red-500">
+          {error}
+        </div>
+      )}
 
       {/* Blog List */}
       <div className="glass-card overflow-hidden">
@@ -126,6 +237,7 @@ const Blogs: React.FC = () => {
                 <th className="px-6 py-4 text-left">Image</th>
                 <th className="px-6 py-4 text-left">Title</th>
                 <th className="px-6 py-4 text-left">Description</th>
+                <th className="px-6 py-4 text-left">Category</th>
                 <th className="px-6 py-4 text-left">Date</th>
                 <th className="px-6 py-4 text-right">Actions</th>
               </tr>
@@ -146,6 +258,7 @@ const Blogs: React.FC = () => {
                   <td className="px-6 py-4 text-gray-400 truncate max-w-xs">
                     {blog.description}
                   </td>
+                  <td className="px-6 py-4 text-gray-400">{blog.category}</td>
                   <td className="px-6 py-4 text-gray-400">{blog.date}</td>
                   <td className="px-6 py-4 text-right">
                     <div className="flex justify-end space-x-3">
@@ -173,23 +286,25 @@ const Blogs: React.FC = () => {
       {/* Add/Edit Modal */}
       {isModalOpen && (
         <div className="modal-overlay">
-          <div className="modal-content glass-card w-full max-w-2xl p-6">
-            <div className="flex justify-between items-center mb-6">
+          <div className="modal-content glass-card w-full max-w-2xl p-6 max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-6 sticky top-0 bg-[#121212] py-2 z-10">
               <h3 className="text-xl font-bold">
                 {currentBlog ? 'Edit Blog' : 'Add New Blog'}
               </h3>
               <button 
                 onClick={() => setIsModalOpen(false)}
                 className="p-2 text-gray-400 hover:text-white rounded-full hover:bg-gray-800 transition-colors"
+                disabled={isLoading}
               >
                 <X size={20} />
               </button>
             </div>
             
             <form onSubmit={handleSubmit} className="space-y-6">
+              {/* Required Fields */}
               <div>
                 <label htmlFor="title" className="block text-sm font-medium text-gray-300 mb-1">
-                  Title
+                  Title <span className="text-red-500">*</span>
                 </label>
                 <input
                   id="title"
@@ -200,28 +315,30 @@ const Blogs: React.FC = () => {
                   placeholder="Enter blog title"
                   value={formData.title}
                   onChange={handleInputChange}
+                  disabled={isLoading}
                 />
               </div>
-              
+
               <div>
                 <label htmlFor="description" className="block text-sm font-medium text-gray-300 mb-1">
-                  Description
+                  Description <span className="text-red-500">*</span>
                 </label>
                 <textarea
                   id="description"
                   name="description"
-                  rows={4}
+                  rows={3}
                   required
                   className="w-full px-4 py-3 rounded-lg"
                   placeholder="Enter blog description"
                   value={formData.description}
                   onChange={handleInputChange}
+                  disabled={isLoading}
                 ></textarea>
               </div>
-              
+
               <div>
                 <label htmlFor="image" className="block text-sm font-medium text-gray-300 mb-1">
-                  Image URL
+                  Image URL <span className="text-red-500">*</span>
                 </label>
                 <input
                   id="image"
@@ -232,6 +349,7 @@ const Blogs: React.FC = () => {
                   placeholder="Enter image URL"
                   value={formData.image}
                   onChange={handleInputChange}
+                  disabled={isLoading}
                 />
                 {formData.image && (
                   <div className="mt-2">
@@ -246,20 +364,118 @@ const Blogs: React.FC = () => {
                   </div>
                 )}
               </div>
+
+              <div>
+                <label htmlFor="content" className="block text-sm font-medium text-gray-300 mb-1">
+                  Content <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  id="content"
+                  name="content"
+                  rows={6}
+                  required
+                  className="w-full px-4 py-3 rounded-lg"
+                  placeholder="Enter blog content"
+                  value={formData.content}
+                  onChange={handleInputChange}
+                  disabled={isLoading}
+                ></textarea>
+              </div>
+
+              <div>
+                <label htmlFor="category" className="block text-sm font-medium text-gray-300 mb-1">
+                  Category <span className="text-red-500">*</span>
+                </label>
+                <input
+                  id="category"
+                  name="category"
+                  type="text"
+                  required
+                  className="w-full px-4 py-3 rounded-lg"
+                  placeholder="Enter blog category"
+                  value={formData.category}
+                  onChange={handleInputChange}
+                  disabled={isLoading}
+                />
+              </div>
+
+              {/* Optional Fields */}
+              <div className="border-t border-gray-800 pt-6">
+                <h4 className="text-lg font-medium mb-4">Optional Fields</h4>
+                
+                <div className="space-y-6">
+                  <div>
+                    <label htmlFor="tags" className="block text-sm font-medium text-gray-300 mb-1">
+                      Tags
+                    </label>
+                    <input
+                      id="tags"
+                      name="tags"
+                      type="text"
+                      className="w-full px-4 py-3 rounded-lg"
+                      placeholder="Enter tags (e.g., #journalism, #writer)"
+                      value={formData.tags}
+                      onChange={handleInputChange}
+                      disabled={isLoading}
+                    />
+                  </div>
+
+                  <div>
+                    <label htmlFor="meta_title" className="block text-sm font-medium text-gray-300 mb-1">
+                      Meta Title
+                    </label>
+                    <input
+                      id="meta_title"
+                      name="meta_title"
+                      type="text"
+                      className="w-full px-4 py-3 rounded-lg"
+                      placeholder="Enter meta title"
+                      value={formData.meta_title}
+                      onChange={handleInputChange}
+                      disabled={isLoading}
+                    />
+                  </div>
+
+                  <div>
+                    <label htmlFor="meta_description" className="block text-sm font-medium text-gray-300 mb-1">
+                      Meta Description
+                    </label>
+                    <textarea
+                      id="meta_description"
+                      name="meta_description"
+                      rows={3}
+                      className="w-full px-4 py-3 rounded-lg"
+                      placeholder="Enter meta description"
+                      value={formData.meta_description}
+                      onChange={handleInputChange}
+                      disabled={isLoading}
+                    ></textarea>
+                  </div>
+                </div>
+              </div>
               
-              <div className="flex justify-end space-x-4 pt-4">
+              <div className="flex justify-end space-x-4 pt-4 sticky bottom-0 bg-[#121212] py-4">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
                   className="px-4 py-2 rounded-lg border border-gray-600 text-gray-300 hover:bg-gray-800 transition-colors"
+                  disabled={isLoading}
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   className="btn-neon px-4 py-2 rounded-lg"
+                  disabled={isLoading}
                 >
-                  {currentBlog ? 'Update' : 'Save'}
+                  {isLoading ? (
+                    <div className="flex items-center">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-black mr-2"></div>
+                      {currentBlog ? 'Updating...' : 'Creating...'}
+                    </div>
+                  ) : (
+                    currentBlog ? 'Update Blog' : 'Create Blog'
+                  )}
                 </button>
               </div>
             </form>
@@ -283,14 +499,23 @@ const Blogs: React.FC = () => {
                 <button
                   onClick={() => setIsDeleteModalOpen(false)}
                   className="px-4 py-2 rounded-lg border border-gray-600 text-gray-300 hover:bg-gray-800 transition-colors"
+                  disabled={isLoading}
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleDelete}
                   className="px-4 py-2 rounded-lg bg-red-500 text-white hover:bg-red-600 transition-colors"
+                  disabled={isLoading}
                 >
-                  Delete
+                  {isLoading ? (
+                    <div className="flex items-center">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Deleting...
+                    </div>
+                  ) : (
+                    'Delete'
+                  )}
                 </button>
               </div>
             </div>

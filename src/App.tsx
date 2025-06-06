@@ -112,14 +112,8 @@ function App() {
           }`}
         >
           <div className="p-6">
-            <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center mb-8">
               <h1 className="text-2xl font-bold text-neon-green">MediCare</h1>
-              <button 
-                onClick={() => setMobileMenuOpen(false)}
-                className="p-2 text-gray-400 hover:text-white rounded-lg hover:bg-gray-800 transition-colors md:hidden"
-              >
-                <X size={20} />
-              </button>
             </div>
             <nav>
               <ul className="space-y-2">

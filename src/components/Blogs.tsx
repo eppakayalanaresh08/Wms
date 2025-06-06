@@ -121,11 +121,13 @@ const Blogs: React.FC = () => {
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
+    console.log(formData,'formDataformData')
     e.preventDefault();
     if (!username || !token) return;
 
     setIsLoading(true);
     setError(null);
+    
 
     const submitData = new FormData();
     

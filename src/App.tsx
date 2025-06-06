@@ -95,8 +95,8 @@ function App() {
           />
         )}
 
-        {/* Mobile Menu Button */}
-        <div className="fixed top-4 left-4 z-50 md:hidden">
+        {/* Mobile Menu Button - Moved to Right */}
+        <div className="fixed top-4 right-4 z-50 md:hidden">
           <button 
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             className="p-3 rounded-lg bg-gray-900 text-neon-green hover:bg-gray-800 transition-all shadow-lg"
@@ -201,8 +201,6 @@ function App() {
         <div className="flex-1 overflow-auto">
           <header className="bg-gray-900 p-4 flex justify-between items-center shadow-md">
             <div className="flex items-center">
-              {/* Add spacing for mobile menu button */}
-              <div className="w-12 md:w-0"></div>
               <h2 className="text-lg sm:text-xl lg:text-2xl font-semibold text-white truncate">
                 {getPageTitle(activePage)}
               </h2>

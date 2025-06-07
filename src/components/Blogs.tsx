@@ -277,7 +277,6 @@ const Blogs: React.FC = () => {
                 <th className="px-6 py-4 text-left">Title</th>
                 <th className="px-6 py-4 text-left">Description</th>
                 <th className="px-6 py-4 text-left">Category</th>
-                <th className="px-6 py-4 text-left">Date</th>
                 <th className="px-6 py-4 text-right">Actions</th>
               </tr>
             </thead>
@@ -298,7 +297,6 @@ const Blogs: React.FC = () => {
                     {blog.description}
                   </td>
                   <td className="px-6 py-4 text-gray-400">{blog.category}</td>
-                  <td className="px-6 py-4 text-gray-400">{blog.date}</td>
                   <td className="px-6 py-4 text-right">
                     <div className="flex justify-end space-x-3">
                       <button 

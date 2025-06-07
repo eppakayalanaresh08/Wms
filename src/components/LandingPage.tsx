@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Activity } from 'lucide-react';
+import { Activity, Eye, EyeOff } from 'lucide-react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 
@@ -10,6 +10,7 @@ interface LandingPageProps {
 const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
   const [loginForm, setLoginForm] = useState({ username: '', password: '' });
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem('accessToken');
@@ -75,16 +76,26 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
             <label htmlFor="password" className="block text-sm font-medium text-gray-300 mb-1">
               Password
             </label>
-            <input
-              id="password"
-              type="password"
-              required
-              className="w-full px-4 py-3 rounded-lg"
-              placeholder="Enter your password"
-              value={loginForm.password}
-              onChange={(e) => setLoginForm({...loginForm, password: e.target.value})}
-              disabled={isLoading}
-            />
+            <div className="relative">
+              <input
+                id="password"
+                type={showPassword ? "text" : "password"}
+                required
+                className="w-full px-4 py-3 pr-12 rounded-lg"
+                placeholder="Enter your password"
+                value={loginForm.password}
+                onChange={(e) => setLoginForm({...loginForm, password: e.target.value})}
+                disabled={isLoading}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-neon-green hover:text-white transition-colors p-1"
+                disabled={isLoading}
+              >
+                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+              </button>
+            </div>
           </div>
           <button
             type="submit"

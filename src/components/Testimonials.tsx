@@ -223,7 +223,7 @@ const Testimonials: React.FC = () => {
         </div>
       </div>
     );
-  }
+  };
 
   return (
     <div>
@@ -268,6 +268,11 @@ const Testimonials: React.FC = () => {
                     />
                   ))}
                 </div>
+                {testimonial.date && (
+                  <p className="text-neon-green text-xs mt-1 font-medium">
+                    {new Date(testimonial.date).toLocaleDateString()}
+                  </p>
+                )}
               </div>
               <div className="flex space-x-2">
                 <button 
@@ -434,13 +439,13 @@ const Testimonials: React.FC = () => {
                 <select
                   id="mediaType"
                   name="mediaType"
-                  className="w-full px-4 py-3 rounded-lg"
+                  className="w-full px-4 py-3 rounded-lg bg-gray-800 border border-gray-600 text-white focus:border-neon-green focus:ring-2 focus:ring-neon-green/20"
                   value={formData.mediaType}
                   onChange={handleInputChange}
                   disabled={isLoading}
                 >
-                  <option value="photo">Photo</option>
-                  <option value="video">Video</option>
+                  <option value="photo" className="bg-gray-800 text-white">Photo</option>
+                  <option value="video" className="bg-gray-800 text-white">Video</option>
                 </select>
               </div>
               
